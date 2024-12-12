@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Interaction</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Toastr CSS -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
+  <style>
+    body {
+      padding: 20px;
+    }
+    /* Loader style (spinner) */
+    #spinner {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+      z-index: 9999;
+      background: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Center spinner inside the background */
+    .spinner-border {
+      width: 3rem;
+      height: 3rem;
+    }
+
+    /* Form Layout */
+    .form-row {
+      margin-bottom: 1rem;
+    }
+
+    .col-6 {
+      padding: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 class="mb-4">API Interaction</h1>
+
+    <!-- Button to Get Token -->
+    <button id="getTokenBtn" class="btn btn-primary mb-4">Get Token</button>
+
+    <!-- Template Form -->
+    <form id="templateForm" class="mb-4">
+      <div class="row form-row">
+        <div class="col-6">
+          <label for="flowId" class="form-label">Flow ID</label>
+          <input type="number" id="flowId" class="form-control" required>
+        </div>
+        <div class="col-6">
+          <label for="eventId" class="form-label">Event ID</label>
+          <input type="text" id="eventId" class="form-control" required>
+        </div>
+      </div>
+
+      <div class="row form-row">
+        <div class="col-6">
+          <label for="headerType" class="form-label">Header Type</label>
+          <input type="number" id="headerType" class="form-control" required>
+        </div>
+        <div class="col-6">
+          <label for="mediaUrl" class="form-label">Media URL</label>
+          <input type="text" id="mediaUrl" class="form-control">
+        </div>
+      </div>
+
+      <div class="row form-row">
+        <div class="col-6">
+          <label for="headerText" class="form-label">Header Text</label>
+          <input type="text" id="headerText" class="form-control" >
+        </div>
+        <div class="col-6">
+          <label for="mobileNumber" class="form-label">Mobile Number</label>
+          <input type="text" id="mobileNumber" class="form-control" required>
+        </div>
+      </div>
+
+      <div class="row form-row">
+        <div class="col-6">
+          <label for="templateName" class="form-label">Template Name</label>
+          <input type="text" id="templateName" class="form-control" required>
+        </div>
+        <div class="col-6">
+          <label for="languageCode" class="form-label">Language Code</label>
+          <input type="text" id="languageCode" class="form-control" required>
+        </div>
+      </div>
+
+      <div class="row form-row">
+        <div class="col-6">
+          <label for="parameters" class="form-label">Parameters (comma-separated)</label>
+          <input type="text" id="parameters" class="form-control">
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-success">Send Template</button>
+    </form>
+  </div>
+
+  <!-- Toastr and Bootstrap JS -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    let token = "";
+
+    // Function to display messages
+    function showMessage(message, type) {
+      toastr[type](message);
+    }
+
+    // Handle Get Token
+    document.getElementById('getTokenBtn').addEventListener('click', async () => {
+      try {
+        // Show the spinner
+        document.getElementById('spinner').style.display = 'flex';
+
+        const response = await fetch('https://vlcommunityapp.com/foh/identity/api/Authentication/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            grantType: "password",
+            userName: "foh@foh.com",
+            password: "F$5sqZbpkn",
+            clientId: "system",
+            clientSecret: "VLSecret",
+            loginMethod: 2
+          })
+        });
+        const data = await response.json();
+
+        // Hide the spinner
+        document.getElementById('spinner').style.display = 'none';
+
+        if (response.ok && data.code == 0) {
+          token = data.data.accessToken;
+          showMessage('Token generated successfully!', 'success');
+        } else {
+          showMessage(data.message || 'Failed to get token', 'error');
+        }
+      } catch (error) {
+        // Hide the spinner
+        document.getElementById('spinner').style.display = 'none';
+        showMessage(error.message, 'error');
+      }
+    });
+
+    // Handle Template Form Submission
+    document.getElementById('templateForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!token) {
+        showMessage('Please generate the token first!', 'warning');
+        return;
+      }
+
+const flowId = parseInt(document.getElementById("flowId").value);
+  const eventId = document.getElementById("eventId").value;
+  const headerType = parseInt(document.getElementById("headerType").value);
+  const mediaUrl = document.getElementById("mediaUrl").value || ""; // Optional field
+  const headerText = document.getElementById("headerText").value || ""; // Optional field
+  const mobileNumber = document.getElementById("mobileNumber").value;
+  const templateName = document.getElementById("templateName").value;
+  const languageCode = document.getElementById("languageCode").value;
+  const parametersInput = document.getElementById("parameters").value;
+
+  // Handle parameters: send an empty array if the input is empty
+  const parameters = parametersInput
+    ? parametersInput.split(",").map((p) => p.trim())
+    : [];
+	
+      const formData = {
+        flowId,
+    eventId,
+    headerType,
+    mediaUrl,
+    headerText,
+    mobileNumber,
+    templateName,
+    languageCode,
+    parameters,
+      };
+
+      try {
+        // Show the spinner
+        document.getElementById('spinner').style.display = 'flex';
+
+        const response = await fetch('https://vlcommunityapp.com/foh/frontendAPI/api/whatsApp/v1/send/template', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(formData)
+        });
+        const data = await response.json();
+
+        // Hide the spinner
+        document.getElementById('spinner').style.display = 'none';
+
+        if (response.ok && data.code == 0) {
+          showMessage('Template sent successfully!', 'success');
+        } else {
+          showMessage(data.message || 'Failed to send template', 'error');
+        }
+      } catch (error) {
+        // Hide the spinner
+        document.getElementById('spinner').style.display = 'none';
+        showMessage(error.message, 'error');
+      }
+    });
+
+    // Hide the spinner when the page is loaded
+    window.onload = () => {
+      document.getElementById('spinner').style.display = 'none';
+    };
+  </script>
+
+  <!-- Spinner -->
+  <div id="spinner">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+</body>
+</html>
